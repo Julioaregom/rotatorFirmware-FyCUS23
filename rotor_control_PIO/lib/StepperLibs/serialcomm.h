@@ -93,13 +93,25 @@ public:
 
     // Write Serial Port. Sending message structure: #SD,(AZ_status),(EL_status),(rotor_status),&
     void serialcomm_send(){
-        while (Serial.availableForWrite() > 0)
+        if (Serial.availableForWrite() > 0)
         {
-            String str1, str2, str3;
+            //int cont=0;
+            //String str1, str2, str3;
+            //char str1=char(control_az.dirStatus);
+            //char str2=char(control_el.dirStatus);            
+            //char str3=char(rotor.rotor_status);
+            //char hola=char(control_az.dirStatus);
+            //Serial.print('#'+'S'+'D'+',' + str1 + ',' + str2 + ',' + str3 + ',' + '&');
+            //Serial.print("#SD," + str3 + "," + byte(control_el.dirStatus) + "," + byte(rotor.rotor_status) + "," + "&");
+            //Serial.print("#SD," + str1 + ',' + str2 + ',' + str3 + ',' + '&');
+            //Serial.print(cont);
+            //cont++;
+            String str1, str2, str3,str;
             str1=String(control_az.dirStatus,2);
             str2=String(control_el.dirStatus,2);            
             str3=String(rotor.rotor_status);
-            Serial.print("#SD," + str1 + "," + str2 + "," + str3 + "," + "&");
+            str="#SD," + str1 + "," + str2 + "," + str3 + "," + "&";
+            Serial.print(str);
         }
     }
 

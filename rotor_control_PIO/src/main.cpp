@@ -1,10 +1,10 @@
 
 
-#define RATIO              1    ///< Gear ratio of rotator gear box    108original                       default 54
-#define MICROSTEP          2     ///< Set Microstep poner a 8
-#define MAX_SPEED          3200  ///< In steps/s, consider the microstep
-#define MAX_ACCELERATION   1600  ///< In steps/s^2, consider the microstep
-#define SPR                400 ///< Step Per Revolution, consider the microstep 1600L 200*^Microstep
+#define RATIO              54    ///< Gear ratio of rotator gear box    108original                       default 54
+#define MICROSTEP          8     ///< Set Microstep poner a 8
+#define MAX_SPEED          3200*8  ///< In steps/s, consider the microstep 3200 default
+#define MAX_ACCELERATION   1600*8  ///< In steps/s^2, consider the microstep 1600 default
+#define SPR                1600L ///< Step Per Revolution, consider the microstep 1600L 200*Microstep
 #define MIN_M1_ANGLE       0     ///< Minimum angle of azimuth
 #define MAX_M1_ANGLE       360   ///< Maximum angle of azimuth
 #define MIN_M2_ANGLE       0     ///< Minimum angle of elevation
@@ -17,7 +17,7 @@
 #include <rotator_pins.h>
 #include <endstop.h>
 
-serialcomm serialport;  
+serialcomm serialport;
 AccelStepper stepper_az(1, M1IN1, M1IN2); //X pin in CNC shield
 AccelStepper stepper_el(1, M2IN1, M2IN2); //Y pin
 endstop switch_el(SW2, DEFAULT_HOME_STATE);
@@ -39,9 +39,11 @@ void setup() {
     stepper_az.setPinsInverted(false, false, true);
     stepper_az.setMaxSpeed(MAX_SPEED);
     stepper_az.setAcceleration(MAX_ACCELERATION);
-    stepper_el.setPinsInverted(true, false, true); 
+    stepper_az.setMinPulseWidth(22);
+    stepper_el.setPinsInverted(false, false, true); 
     stepper_el.setMaxSpeed(MAX_SPEED);
     stepper_el.setAcceleration(MAX_ACCELERATION);
+    stepper_el.setMinPulseWidth(22);
 }
 
 void loop() {
@@ -72,6 +74,7 @@ void loop() {
                 // Azimuth axis uses relative coordinates, Elevation axis uses absolute coordinates
                 stepper_az.move(deg2step(minTurn(control_az.prev_pointer,control_az.pointer)));
                 stepper_el.moveTo(deg2step(control_el.pointer));
+
                 rotor.rotor_status=moving;
                 rotor.msg_flag=false;
             }
@@ -105,11 +108,15 @@ void loop() {
         stepper_az.disableOutputs();
         stepper_el.stop();
         stepper_el.disableOutputs();
+        stepper_az.moveTo(stepper_az.currentPosition()); 
+        stepper_el.moveTo(stepper_el.currentPosition()); 
     }
 
     // Run Serialcomm packet sender
-    serialport.serialcomm_send();
-} 
+    if(rotor.rotor_status!=moving){
+        serialport.serialcomm_send();
+    }
+}
 
 // Homing elevation axis, stops when reaches switch
 void homing(int32_t seek_el) {
@@ -121,7 +128,7 @@ void homing(int32_t seek_el) {
 
     stepper_el.enableOutputs();
     stepper_az.enableOutputs();
-    stepper_el.setSpeed(500); //Constant speed for homing
+    //stepper_el.setSpeed(500); //Constant speed for homing
     stepper_el.moveTo(seek_el);
 
 
@@ -141,7 +148,7 @@ void homing(int32_t seek_el) {
         }
         if (isHome_el==false)
         {
-            stepper_el.runSpeed();
+            stepper_el.run();
         }
     }
 
