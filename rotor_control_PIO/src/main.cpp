@@ -40,7 +40,7 @@ void setup() {
     stepper_az.setMaxSpeed(MAX_SPEED);
     stepper_az.setAcceleration(MAX_ACCELERATION);
     stepper_az.setMinPulseWidth(22);
-    stepper_el.setPinsInverted(false, false, true); 
+    stepper_el.setPinsInverted(true, false, true); 
     stepper_el.setMaxSpeed(MAX_SPEED);
     stepper_el.setAcceleration(MAX_ACCELERATION);
     stepper_el.setMinPulseWidth(22);
@@ -108,8 +108,8 @@ void loop() {
         stepper_az.disableOutputs();
         stepper_el.stop();
         stepper_el.disableOutputs();
-        stepper_az.moveTo(stepper_az.currentPosition()); 
-        stepper_el.moveTo(stepper_el.currentPosition()); 
+        rotor.rotor_status=idle;
+        control_az.prev_pointer=recalculateToRange(step2deg(stepper_az.currentPosition())); // Sets previous pointer in absolute position
     }
 
     // Run Serialcomm packet sender
