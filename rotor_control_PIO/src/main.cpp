@@ -1,4 +1,4 @@
-
+// RELEASE 1.0 versión validada
 
 #define RATIO              54    ///< Gear ratio of rotator gear box    108original                       default 54
 #define MICROSTEP          8     ///< Set Microstep poner a 8
@@ -26,6 +26,8 @@ float step2deg(int32_t step);
 float minTurn(float prev, float point); //Calculates minimum turn
 float recalculateToRange(float current); //Recalculates Az position in between 0-360 deg (in case it exceeds)
 void homing(int32_t seek_el);
+volatile unsigned int send_flag = 0;
+volatile unsigned int receiv_flag = 0;
 
 void setup() {
     // Homing switch
@@ -44,13 +46,20 @@ void setup() {
     stepper_el.setMaxSpeed(MAX_SPEED);
     stepper_el.setAcceleration(MAX_ACCELERATION);
     stepper_el.setMinPulseWidth(22);
+
+    SREG = (SREG & 0b01111111); //Desabilitar interrupciones
+    TIMSK2 = TIMSK2|0b00000001; //Habilita la interrupcion por desbordamiento
+    TCCR2B = 0b00000111;; //Configura preescala para que FT2 sea de 7812.5Hz
+    SREG = (SREG & 0b01111111) | 0b10000000; //Habilitar interrupciones //Desabilitar interrupciones
 }
 
 void loop() {
 
     // Run serialcomm packet receiver
-    serialport.serialcomm_receive();
-
+    if (receiv_flag){
+        serialport.serialcomm_receive();
+        receiv_flag=0;
+    }
     // Get position of both axis
     control_az.dirStatus = recalculateToRange(step2deg(stepper_az.currentPosition()));
     control_el.dirStatus = step2deg(stepper_el.currentPosition());
@@ -63,6 +72,11 @@ void loop() {
         rotor.rotor_error=false;
     }
     
+    if(switch_el.get_state()==true){
+        rotor.rotor_error=true;
+    }else{
+        rotor.rotor_error=false;
+    }
 
     // Rotator movement
     if (!rotor.rotor_error && ONOFF && !rotor.home_error) {
@@ -113,9 +127,15 @@ void loop() {
     }
 
     // Run Serialcomm packet sender
-    if(rotor.rotor_status!=moving){
+    if (send_flag){
         serialport.serialcomm_send();
+        send_flag=0;
     }
+} 
+
+ISR(TIMER2_OVF_vect){
+    send_flag=1;
+    receiv_flag=1;
 }
 
 // Homing elevation axis, stops when reaches switch
