@@ -15,7 +15,7 @@
 #include <globals.h>
 #include <serialcomm.h>
 #include <rotator_pins.h>
-#include <endstop.h>
+#include <endstop.h> 
 
 serialcomm serialport;
 AccelStepper stepper_az(1, M1IN1, M1IN2); //X pin in CNC shield
@@ -38,11 +38,11 @@ void setup() {
 
     // Stepper Motor setup
     stepper_az.setEnablePin(MOTOR_EN);
-    stepper_az.setPinsInverted(false, false, true);
+    stepper_az.setPinsInverted(true, false, true);
     stepper_az.setMaxSpeed(MAX_SPEED);
     stepper_az.setAcceleration(MAX_ACCELERATION);
     stepper_az.setMinPulseWidth(22);
-    stepper_el.setPinsInverted(true, false, true); 
+    stepper_el.setPinsInverted(false, false, true); 
     stepper_el.setMaxSpeed(MAX_SPEED);
     stepper_el.setAcceleration(MAX_ACCELERATION);
     stepper_el.setMinPulseWidth(22);
@@ -58,6 +58,7 @@ void loop() {
     // Run serialcomm packet receiver
     if (receiv_flag){
         serialport.serialcomm_receive();
+        control_az.prev_pointer=recalculateToRange(step2deg(stepper_az.currentPosition())); // Sets previous pointer in absolute position
         receiv_flag=0;
     }
     // Get position of both axis
@@ -72,11 +73,6 @@ void loop() {
         rotor.rotor_error=false;
     }
     
-    if(switch_el.get_state()==true){
-        rotor.rotor_error=true;
-    }else{
-        rotor.rotor_error=false;
-    }
 
     // Rotator movement
     if (!rotor.rotor_error && ONOFF && !rotor.home_error) {
